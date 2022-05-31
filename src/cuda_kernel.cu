@@ -2,6 +2,7 @@
 // CUDA libraries.
 #include <cuda.h>
 #include <cuda_runtime.h>
+#include <cufftdx.hpp>
 
 // Include associated header file.
 #include "../include/cuda_kernel.cuh"
@@ -25,6 +26,20 @@ __global__ void cuda_kernel(double *A, double *B, double *C, int arraySize){
     }
 }
 
+// Empty kernel to compute an FFT of size 128 using float
+__global__ void fft_128_float(float2* data, typename FFT::workspace_type workspace) {
+  using namespace cufftdx;
+
+  using FFT = decltype(Size<128>() + Precision<float>() + Type<fft_type::c2c>() + Direction<fft_direction::forward>() + FFTsPerBlock<1>() + ElementsPerThread<8>() + SM<700>() + block());
+
+  using complex_type = typename FFT::value_type;
+
+  complex_type thread_data[FFT::storage_size];
+
+  extern __shared__ complex_type shared_mem[];
+    // Execute FFT
+  FFT().execute(thread_data, shared_mem, workspace);
+}
 
 
 /**
